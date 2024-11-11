@@ -1,6 +1,7 @@
 const fs = require('fs');
 const http = require('http');
 const url = require('url');
+const slugify = require('slugify');
 
 // console.log(`Hello world!`);
 
@@ -31,9 +32,13 @@ const productData = JSON.parse(data);
 
 const renderDataToHtml = require('./modules/replaceTemplate');
 
-// const options = {
-//   port: 80,
-// };
+// slugifying product
+
+const slugs = productData.map(product =>
+  slugify(product.productName, { lower: true })
+);
+
+console.log(slugs);
 
 const server = http.createServer((req, res) => {
   const { query, pathname } = url.parse(req.url, true);
