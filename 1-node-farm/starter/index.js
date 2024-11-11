@@ -18,6 +18,10 @@ const overviewPage = fs.readFileSync(
   `${__dirname}/templates/overview.html`,
   'utf-8'
 );
+const templateProduct = fs.readFileSync(
+  `${__dirname}/templates/product.html`,
+  'utf-8'
+);
 const templateCards = fs.readFileSync(
   `${__dirname}/templates/template-cards.html`,
   'utf-8'
@@ -25,48 +29,54 @@ const templateCards = fs.readFileSync(
 // const productData = JSON.parse(data);
 const productData = JSON.parse(data);
 
-const renderDataToHtml = (pageTemplate, product) => {
-  let cards = pageTemplate;
-  cards = cards.replace(/{%product-name%}/g, product.productName);
-  cards = cards.replace(/{%product-description%}/g, product.description);
-  cards = cards.replace(/{%product-image%}/g, product.image);
-  cards = cards.replace(/{%product-quantity%}/g, product.quantity);
-  cards = cards.replace(/{%product-price%}/g, product.price);
-  cards = cards.replace(/{%product-id%}/g, product.id);
-  if (!product.organic)
-    cards = cards.replace(/{%NOT_ORGANIC%}/g, 'not-organic'); // console.log(pageTemplate);
-  return cards;
-};
+const renderDataToHtml = require('./modules/replaceTemplate');
 
 // const options = {
 //   port: 80,
 // };
 
 const server = http.createServer((req, res) => {
-  const pathName = req.url;
-  console.log(`Request on: ${pathName}`);
-  if (pathName === '/' || pathName === 'overview') {
+  const { query, pathname } = url.parse(req.url, true);
+
+  console.log(`Request on: ${pathname}`);
+  if (pathname === '/' || pathname === '/overview') {
     let newHtmlWithCards = productData
       .map(
         product => renderDataToHtml(templateCards, product)
         // console.log(renderDataToHtml(templateCards, product));
       )
       .join('');
-    // console.log(newHtmlWithCards);
 
     let newTemplateWithData = overviewPage.replace(
       /{%CARDS_ELEMENT%}/,
       newHtmlWithCards
     );
-    // console.log(newHtmlWithCards);
-    // res.end(output);
+
     res.writeHead(200, {
       'Content-Type': 'text/html',
     });
     res.end(newTemplateWithData);
-  } else if (pathName === '/product') {
-    res.end('products');
-  } else if (pathName === '/api') {
+  } else if (pathname === '/product') {
+    console.log(query);
+    res.writeHead(200, {
+      'Content-Type': 'text/html',
+    });
+
+    if (productData.find(t => t.id === +query.id)) {
+      let product = productData.find(t => t.id === +query.id);
+      // console.log(product);
+      let newPageHtml = renderDataToHtml(templateProduct, product);
+      res.end(newPageHtml);
+    } else {
+      let message = `Could not find product with id: ${query.id}`;
+      console.log(message);
+      let newTemplateWithData = overviewPage.replace(
+        /{%CARDS_ELEMENT%}/,
+        message
+      );
+      res.end(newTemplateWithData);
+    }
+  } else if (pathname === '/api') {
     res.writeHead(200, {
       'Content-Type': 'application/json',
     });
