@@ -11,6 +11,8 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/ToursRoutes');
 const userRouter = require('./routes/UsersRoutes');
+const reviewRouter = require('./routes/ReviewRoutes');
+
 const { whitelist } = require('validator');
 
 // 1) global MIDDLEWARES
@@ -63,6 +65,7 @@ app.use((req, res, next) => {
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

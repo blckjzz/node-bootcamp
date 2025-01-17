@@ -3,38 +3,35 @@ const catchAsync = require('../utils/catchAsync');
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
 const AppError = require('../utils/appError');
+const factory = require('./handlerFactory');
 
-exports.topFiveToursMiddleware = (req, res, next) => {
-  req.query.limit = '5';
-  req.query.sort = '-ratingsAverage,price';
-  req.query.fields = 'name,summary,price,ratingsQuantity,difficulty';
-  next();
-};
+exports.deleteTourById = factory.deleteOne(Tour);
 
-exports.getTourById = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id);
+exports.updateTourById = factory.updateOne(Tour);
 
-  if (!tour) {
+exports.createNewTour = factory.createOne(Tour);
+
+exports.getTourById = factory.getOneById(Tour, { path: 'reviews' });
+
+exports.getAllTours = factory.getAll(Tour);
+
+exports.toursWithinDistance = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+  if (!lat || !lng)
     return next(
-      new AppError(`Tour by id '${req.params.id}' was not found`, 404),
+      new AppError(
+        'Please provide lat and lng in the correct format: lat,lng',
+        400,
+      ),
     );
-  }
+  // console.log(distance, lat, lng, unit);
 
-  res.status(200).json({
-    status: 'success',
-    requested_at: req.requested_at,
-    tour: { tour },
+  const radius = unit === 'km' ? distance / 6378.1 : distance / 3963.2;
+
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
   });
-});
-
-exports.getAllTours = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query)
-    .filter()
-    .sort()
-    .fields()
-    .paginate();
-  // fetch results from database
-  const tours = await features.query;
 
   res.status(200).json({
     status: 'success',
@@ -43,45 +40,53 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.deleteTourById = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndDelete(req.params.id);
+// '/distances/:latlng/unit/:unit'
+exports.getToursByProximity = catchAsync(async (req, res, next) => {
+  const { latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
 
-  if (!tour) {
+  const multiplier = unit === 'km' ? 0.001 : 0.000621371;
+
+  if (!lat || !lng)
     return next(
-      new AppError(`Tour by id '${req.params.id}' was not found`, 404),
+      new AppError(
+        'Please provide lat and lng in the correct format: lat,lng',
+        400,
+      ),
     );
-  }
-
-  res.status(204).json({
-    status: 'delete',
-  });
-});
-
-exports.updateTourById = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-
-  if (!tour) {
-    return next(
-      new AppError(`Tour by id '${req.params.id}' was not found`, 404),
-    );
-  }
+  const tours = await Tour.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [lng * 1, lat * 1],
+        },
+        distanceField: 'distance',
+        distanceMultiplier: multiplier, // converting meters to km === didive by 1000 or multiply by 0.001;
+      },
+    },
+    {
+      $project: {
+        id: 1,
+        name: 1,
+        distance: 1,
+      },
+    },
+  ]);
 
   res.status(200).json({
     status: 'success',
-    tour: tour,
+    results: tours.length,
+    data: { tours },
   });
 });
 
-exports.createNewTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.create(req.body);
-  res.status(200).json({
-    status: 'success',
-    tour: { tour },
-  });
-});
+exports.topFiveToursMiddleware = (req, res, next) => {
+  req.query.limit = '5';
+  req.query.sort = '-ratingsAverage,price';
+  req.query.fields = 'name,summary,price,ratingsQuantity,difficulty';
+  next();
+};
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
   // console.log(req.body);
@@ -149,7 +154,7 @@ exports.getMontlyPlan = catchAsync(async (req, res, next) => {
       $limit: 12,
     },
   ]);
-  console.log(plan);
+  // console.log(plan);
   res.status(200).json({
     status: 'success',
     plan: plan,

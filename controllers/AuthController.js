@@ -80,6 +80,7 @@ exports.login = catchAsync(async (req, res, next) => {
       user: {
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     },
   });
@@ -92,7 +93,6 @@ exports.protected = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
-    // console.log('Token:', token);
   }
   if (!token) {
     return next(
@@ -105,14 +105,15 @@ exports.protected = catchAsync(async (req, res, next) => {
       token,
       process.env.JWT_SECRET,
     );
-    // console.log('Decoded Token:', tokenVerification);
-
+    // console.log('Token:', token);
     const freshUser = await User.findById(tokenVerification.id);
     if (!freshUser) {
       return next(
         new AppError('The token belongs to a user that no longer exists.', 401),
       );
     }
+    // console.log('Decoded token:', tokenVerification);
+    // console.log('User fetched from DB:', freshUser);
     // console.log('Fetched User:', freshUser);
 
     if (freshUser.changedPasswordAfter(tokenVerification.iat)) {
@@ -127,14 +128,18 @@ exports.protected = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.restrictTo = (...roles) => {
+exports.restrictTo = (roles) => {
   return catchAsync(async (req, res, next) => {
+    // console.log(`Ther user role is: ${req.user.role}`);
+    // console.log(`The allowed roles are: ${roles}`);
     if (!roles.includes(req.user.role)) {
-      console.log(`roles: ${roles}`);
       return next(
         new AppError('You can not perform this action with current role.', 403),
       );
     }
+    // console.log(
+    //   `Ther role is:${req.user.role} and is it allowed? ${roles.includes(req.user.role) ? true : false}`,
+    // );
     next();
   });
 };

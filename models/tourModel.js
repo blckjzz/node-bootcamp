@@ -2,9 +2,10 @@ const slugify = require('slugify');
 
 const validator = require('validator');
 
-const mongose = require('mongoose');
+const mongoose = require('mongoose');
+// const Review = require('./reviewModel');
 
-const tourSchema = new mongose.Schema(
+const tourSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -35,15 +36,12 @@ const tourSchema = new mongose.Schema(
           "Tour difficulty should be either: 'easy', 'medium', 'difficult'",
       },
     },
-    ratings: {
-      type: Number,
-      default: 0,
-    },
     ratingsAverage: {
       type: Number,
       default: 0,
       min: [0, 'RatingAverage should be bellow 0'],
       max: [5, 'RatingAverage must under 5'],
+      set: (val) => Math.round(val * 10) / 10,
     },
     ratingsQuantity: {
       type: Number,
@@ -84,18 +82,53 @@ const tourSchema = new mongose.Schema(
       select: false,
     },
     startDates: [Date],
+    slug: String,
     secretTour: {
       type: Boolean,
       default: false,
     },
-    slug: String,
+    startLocation: {
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number], //Geojson (Long - Lat) -- opposite
+      address: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number], //Geojson (Long - Lat) -- opposite
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
   },
 
   { toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
 
+// tourSchema.index({ price: 1 });
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
+tourSchema.index({ startLocation: '2dsphere' });
+
 tourSchema.virtual('durationWeeks').get(function () {
   return Math.floor(this.duration / 7);
+});
+
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
 });
 
 // runs before saving or creating a new record in the database
@@ -110,6 +143,17 @@ tourSchema.pre('find', function (next) {
   this.start = Date.now();
   next();
 });
+// tourSchema.pre('aggregate', function (next) {
+//   console.log(this.pipeline());
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   console.log(this.pipeline());
+//   next();
+// });
+
+tourSchema.pre(/^find/, function (next) {
+  this.populate({ path: 'guides', select: '-role' });
+  next();
+});
 
 tourSchema.post(['find', 'findOne'], function (docs, next) {
   // console.log(docs);
@@ -117,13 +161,6 @@ tourSchema.post(['find', 'findOne'], function (docs, next) {
   next();
 });
 
-tourSchema.pre('aggregate', function (next) {
-  console.log(this.pipeline());
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  console.log(this.pipeline());
-  next();
-});
-
-const Tour = mongose.model('Tour', tourSchema);
+const Tour = mongoose.model('Tour', tourSchema);
 
 module.exports = Tour;

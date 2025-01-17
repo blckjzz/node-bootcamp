@@ -1,6 +1,17 @@
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const factory = require('./handlerFactory');
+
+exports.updateUserById = factory.updateOne(User);
+exports.deleteUserById = factory.deleteOne(User);
+exports.getUserById = factory.getOneById(User);
+exports.getAllUsers = factory.getAll(User);
+
+exports.getMyData = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
 
 const sendResponse = (user, statusCode, res) => {
   res.status(statusCode).json({
@@ -11,43 +22,13 @@ const sendResponse = (user, statusCode, res) => {
   });
 };
 
-exports.getUserById = (req, res) => {
+exports.createUser = (req, res, next) => {
   res.status(500).json({
     status: 'error',
-    message: 'This resource is yet not implemented.',
+    message: 'use /sign-up ins',
   });
+  next();
 };
-
-exports.updateUserById = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This resource is yet not implemented.',
-  });
-};
-
-exports.deleteUserById = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This resource is yet not implemented.',
-  });
-};
-
-exports.createUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This resource is yet not implemented.',
-  });
-};
-
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: 'success',
-    data: {
-      users: users,
-    },
-  });
-});
 
 exports.updateUserData = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {

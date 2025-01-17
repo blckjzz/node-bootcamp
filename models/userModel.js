@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'tour-guide', 'lead-guide'],
+    enum: ['admin', 'user', 'tour-guide', 'lead-guide', 'guide'],
     default: 'user',
   },
   password: {
@@ -62,7 +62,7 @@ userSchema.pre('save', function (next) {
 });
 
 userSchema.pre('save', async function (next) {
-  console.log(this);
+  // console.log(this);
   //encrypt pass with hash
   //   if (this.password.trim() === this.passwordConfirm.trim()) {
   if (!this.isModified('password')) next();
