@@ -11,7 +11,7 @@ mongose.connect(DB).then(() => {});
 
 console.log(process.env.NODE_ENV);
 
-const server = app.listen(process.env.PORT, process.env.HOSTNAME, () => {
+const server = app.listen(process.env.PORT, () => {
   console.log(
     `server listening on ${process.env.HOSTNAME}:${process.env.PORT}`,
   );
