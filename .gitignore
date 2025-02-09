@@ -1,5 +1,14 @@
+<<<<<<< HEAD
+=======
+*.env
+>>>>>>> studying
 .DS_Store
 .gitignore.save
 vscode-setup.md
 node_modules
+<<<<<<< HEAD
 package-lock.json
+=======
+.cache/
+.parcel-cache/
+>>>>>>> studying
