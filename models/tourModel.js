@@ -133,7 +133,6 @@ tourSchema.virtual('reviews', {
 
 // runs before saving or creating a new record in the database
 tourSchema.pre('save', function (next) {
-  console.log(this);
   this.slug = slugify(this.name, { lower: true });
   next();
 });
@@ -143,12 +142,6 @@ tourSchema.pre('find', function (next) {
   this.start = Date.now();
   next();
 });
-// tourSchema.pre('aggregate', function (next) {
-//   console.log(this.pipeline());
-//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-//   console.log(this.pipeline());
-//   next();
-// });
 
 tourSchema.pre(/^find/, function (next) {
   this.populate({ path: 'guides', select: '-role' });
@@ -156,7 +149,6 @@ tourSchema.pre(/^find/, function (next) {
 });
 
 tourSchema.post(['find', 'findOne'], function (docs, next) {
-  // console.log(docs);
   console.log(`Query took: ${Date.now() - this.start} ms to execute.`);
   next();
 });

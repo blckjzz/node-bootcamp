@@ -6,7 +6,6 @@ class APIFeatures {
 
   filter() {
     let objQuery = { ...this.queryString };
-    // console.log(`Inside filter function!: ${objQuery}`);
     const excludesFields = ['sort', 'page', 'limit', 'fields'];
     excludesFields.forEach((ex) => {
       delete objQuery[ex];
@@ -15,7 +14,6 @@ class APIFeatures {
       /\b(gte|gt|lte|lt)\b/g,
       (match) => `$${match}`,
     );
-    // console.log(objQuery);
     this.query = this.query.find(JSON.parse(objQuery));
     return this;
   }

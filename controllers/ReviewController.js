@@ -21,8 +21,6 @@ exports.getUserOwnReviews = catchAsync(async (req, res, next) => {
     return next(new AppError('Please log-in to access this feature', 403));
 
   const reviews = await Review.find({ user: req.user.id });
-  //   console.log(reviews);
-
   res.status(200).json({
     status: 'success',
     data: { reviews: reviews },

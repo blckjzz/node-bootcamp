@@ -45,10 +45,16 @@ router
     authController.restrictTo(['admin', 'lead-guide', 'user', 'guide']),
     TourController.getTourById,
   )
-  .patch(TourController.updateTourById)
+  .patch(
+    authController.protected,
+    authController.restrictTo(['admin']),
+    TourController.uploadToursPhotos,
+    TourController.resizeTourImages,
+    TourController.updateTourById,
+  )
   .delete(
     authController.protected,
-    authController.restrictTo(['admin', 'lead-guide', 'guide']),
+    authController.restrictTo(['admin']),
     TourController.deleteTourById,
   );
 

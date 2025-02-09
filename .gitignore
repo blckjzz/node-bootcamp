@@ -1,6 +1,6 @@
-.env
+*.env
 .DS_Store
 .gitignore.save
 vscode-setup.md
 node_modules
-package-lock.json%   
+.cache/

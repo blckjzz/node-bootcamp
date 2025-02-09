@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema({
       message: 'The passwords must match!',
     },
   },
-  photo: { type: String },
+  photo: { type: String, default: 'default.jpg' },
   passwordChangedAt: Date,
   passwordResetToken: { type: String },
   passwordTokenExpires: { type: Date },
@@ -62,11 +62,7 @@ userSchema.pre('save', function (next) {
 });
 
 userSchema.pre('save', async function (next) {
-  // console.log(this);
-  //encrypt pass with hash
-  //   if (this.password.trim() === this.passwordConfirm.trim()) {
   if (!this.isModified('password')) next();
-  //   throw new AppError('The passwords must match.', 400);
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
   next();

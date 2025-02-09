@@ -1,26 +1,78 @@
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/ToursRoutes');
 const userRouter = require('./routes/UsersRoutes');
 const reviewRouter = require('./routes/ReviewRoutes');
+const viewRouter = require('./routes/ViewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
 const { whitelist } = require('validator');
 
 // 1) global MIDDLEWARES
 const app = express();
-// set security HTTP
-app.use(helmet());
+app.set('view engine', 'pug');
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('views', path.join(__dirname, 'views'));
 
-// "message": "It appears you have done something like `app.use(helmet)`, but it should be `app.use(helmet())`.",
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+        'https://unpkg.com',
+        'https://js.stripe.com', // Corrigido, removido "/v3/"
+      ],
+      styleSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://fonts.googleapis.com',
+        'https://unpkg.com',
+        "'unsafe-inline'",
+      ],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'https://api.mapbox.com'],
+      connectSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://api.stripe.com', // Adicionado para permitir conexões com a API do Stripe
+        'https://r.stripe.com', // 🔥 Adicionado Stripe Analytics
+        'http://127.0.0.1',
+        'http://127.0.0.1:3000',
+        'http://localhost:3000',
+        'ws://localhost:*', // Permite WebSockets para desenvolvimento
+      ],
+      frameSrc: [
+        "'self'",
+        'https://js.stripe.com',
+        'https://checkout.stripe.com', // Adicionado para permitir iframes do Stripe
+      ],
+    },
+  }),
+);
+
+app.use(
+  cors({
+    origin: 'http://localhost:3000', // A origem do seu front-end
+    credentials: true, // Permite que cookies sejam enviados
+  }),
+);
 
 // development logging
 if (process.env.NODE_ENV === 'development') {
@@ -34,6 +86,7 @@ const limiter = rateLimit({
 });
 // body parser  --- limitation
 app.use(express.json({ limit: '10kb' }));
+app.use(cookieParser());
 
 // protecting nosql injection and XSSR
 app.use(mongoSanitize());
@@ -52,20 +105,19 @@ app.use(
 );
 // limits every route under /api
 app.use('/api', limiter);
-
-// serving static files
-app.use(express.static(`${__dirname}/public`));
+app.use(compression());
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  // console.log(req.headers);
   next();
 });
 
 // 3) ROUTES
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
@@ -74,45 +126,3 @@ app.all('*', (req, res, next) => {
 app.use(globalErrorHandler);
 
 module.exports = app;
-
-// // const { error } = require('console');
-// const express = require('express');
-// const appError = require('./utils/appError');
-// const globalErrorHandler = require('./controllers/errorController');
-
-// const app = express();
-
-// const morgan = require('morgan');
-
-// if (process.env.NODE_ENV === 'development') {
-//   app.use(morgan('dev'));
-// }
-
-// app.use(express.json());
-// app.use(express.static(`${__dirname}/public`));
-
-// // app.use((request, respose, next) => {
-// //   request.requested_at = new Date().toISOString();
-// //   next();
-// // });
-
-// // console.log(toursData);
-
-// const toursRouter = require('./routes/ToursRoutes');
-// const usersRouter = require('./routes/UsersRoutes');
-// const AppError = require('./utils/appError');
-
-// app.use('/api/v1/users', usersRouter);
-// app.use('/api/v1/tours', toursRouter);
-// app.all('*', (req, res, next) => {
-//   next(
-//     new AppError(
-//       `resource ${req.originalUrl} not available in this server.`,
-//       404,
-//     ),
-//   );
-// });
-
-// app.use(globalErrorHandler);
-
-// module.exports = app;

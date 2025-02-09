@@ -5,6 +5,9 @@ const APIFeatures = require('../utils/apiFeatures');
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
 
+const multer = require('multer');
+const sharp = require('sharp');
+
 exports.deleteTourById = factory.deleteOne(Tour);
 
 exports.updateTourById = factory.updateOne(Tour);
@@ -14,6 +17,62 @@ exports.createNewTour = factory.createOne(Tour);
 exports.getTourById = factory.getOneById(Tour, { path: 'reviews' });
 
 exports.getAllTours = factory.getAll(Tour);
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('This file type is not permited!', 400), false);
+  }
+};
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+exports.uploadToursPhotos = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  if (!req.files || (!req.files.imageCover && !req.files.images)) return next();
+
+  // 1️⃣ Processar a imagem de capa (imageCover)
+  if (req.files.imageCover) {
+    const imageCoverFilename = `tour-${req.params.id}-${Date.now()}.jpeg`;
+
+    await sharp(req.files.imageCover[0].buffer)
+      .resize(2000, 1333)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/tours/${imageCoverFilename}`);
+
+    req.body.imageCover = imageCoverFilename;
+  }
+
+  // 2️⃣ Processar múltiplas imagens
+  req.body.images = [];
+
+  if (req.files.images) {
+    const timestamp = Date.now(); // Evita que cada imagem tenha um timestamp diferente
+
+    await Promise.all(
+      req.files.images.map(async (image, i) => {
+        const fileName = `tour-${req.params.id}-${timestamp}-${i + 1}.jpeg`;
+
+        await sharp(image.buffer)
+          .resize(2000, 1333)
+          .toFormat('jpeg')
+          .jpeg({ quality: 90 })
+          .toFile(`public/img/tours/${fileName}`);
+
+        req.body.images.push(fileName);
+      }),
+    );
+  }
+  next();
+});
 
 exports.toursWithinDistance = catchAsync(async (req, res, next) => {
   const { distance, latlng, unit } = req.params;
@@ -25,7 +84,6 @@ exports.toursWithinDistance = catchAsync(async (req, res, next) => {
         400,
       ),
     );
-  // console.log(distance, lat, lng, unit);
 
   const radius = unit === 'km' ? distance / 6378.1 : distance / 3963.2;
 
@@ -89,8 +147,6 @@ exports.topFiveToursMiddleware = (req, res, next) => {
 };
 
 exports.getTourStats = catchAsync(async (req, res, next) => {
-  // console.log(req.body);
-  // console.log(req.query);
   const stats = await Tour.aggregate([
     {
       $match: { ratingsAverage: { $gte: 3.5 } },
@@ -110,7 +166,6 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
       $sort: { avgPrice: 1 },
     },
   ]);
-  // console.log(stats);
   res.status(200).json({
     status: 'success',
     stats: stats,
@@ -119,8 +174,6 @@ exports.getTourStats = catchAsync(async (req, res, next) => {
 
 exports.getMontlyPlan = catchAsync(async (req, res, next) => {
   const year = req.params.year * 1;
-
-  console.log(`Param: ${year}`);
 
   const plan = await Tour.aggregate([
     {
@@ -154,7 +207,6 @@ exports.getMontlyPlan = catchAsync(async (req, res, next) => {
       $limit: 12,
     },
   ]);
-  // console.log(plan);
   res.status(200).json({
     status: 'success',
     plan: plan,
