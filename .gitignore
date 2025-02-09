@@ -4,3 +4,4 @@
 vscode-setup.md
 node_modules
 .cache/
+.parcel-cache/
