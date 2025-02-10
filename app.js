@@ -75,10 +75,12 @@ app.use(
 
 app.use(
   cors({
-    origin: 'http://localhost:3000', // A origem do seu front-end
+    // origin: 'http://127.0.0.1:3000', // A origem do seu front-end
     credentials: true, // Permite que cookies sejam enviados
   }),
 );
+
+app.options('*', cors());
 
 // development logging
 if (process.env.NODE_ENV === 'development') {
