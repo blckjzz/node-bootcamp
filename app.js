@@ -13,6 +13,7 @@ const cookieParser = require('cookie-parser');
 
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
+const bookingController = require('./controllers/bookingController');
 const tourRouter = require('./routes/ToursRoutes');
 const userRouter = require('./routes/UsersRoutes');
 const reviewRouter = require('./routes/ReviewRoutes');
@@ -92,6 +93,13 @@ const limiter = rateLimit({
   windowMs: 60 * 60 * 1000, // one hour
   message: 'Too many requests from the same IP.',
 });
+
+app.post(
+  'webhook-checkout-session',
+  express.raw,
+  bookingController.webhookStripeSession,
+);
+
 // body parser  --- limitation
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
