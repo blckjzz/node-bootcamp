@@ -23,7 +23,12 @@ const { whitelist } = require('validator');
 
 // 1) global MIDDLEWARES
 const app = express();
-app.enable('trust proxy');
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
+} else {
+  app.set('trust proxy', false);
+}
+
 app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
