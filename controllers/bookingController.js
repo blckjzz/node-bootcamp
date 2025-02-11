@@ -92,8 +92,11 @@ exports.webhookStripeSession = async (req, res, next) => {
   res.status(200).send('Webhook received');
 
   try {
+    console.log(`event data: ${event.data.object}`);
     const booking = await createBookingCheckoutDB(event.data.object);
+    const booking2 = createBookingCheckoutDB(event.data.object);
     console.log(`Booking created: ${JSON.stringify(booking)}`);
+    console.log(`Booking created2: ${JSON.stringify(booking2)}`);
   } catch (error) {
     console.error(`Error processing webhook: ${error.message}`);
   }
