@@ -48,10 +48,12 @@ app.use(
       ],
       styleSrc: [
         "'self'",
-        'https://api.mapbox.com',
+        "'unsafe-inline'", //
         'https://fonts.googleapis.com',
+        'https://api.mapbox.com',
         'https://unpkg.com',
-        "'unsafe-inline'",
+        'https://js.stripe.com',
+        'https://api.stripe.com',
       ],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'https://api.mapbox.com'],
