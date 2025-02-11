@@ -79,10 +79,11 @@ exports.createBookingCheckout = catchAsync(async (req, res, next) => {
 });
 
 exports.webhookStripeSession = async (req, res, next) => {
-  // const signature = process.env.STRIPE_SIGNATURE_KEY;
-  console.log(`Stripe hook received request! ${req}`);
+  console.log(`Stripe hook received request!`);
+
   const signature = req.headers['stripe-signature'];
   let event;
+
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
@@ -90,21 +91,47 @@ exports.webhookStripeSession = async (req, res, next) => {
       process.env.STRIPE_SIGNATURE_KEY,
     );
   } catch (error) {
+    console.error(`Webhook signature verification failed: ${error.message}`);
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
-  // if (event.type === 'checkout.session.completed') {
-  //   const booking = createBookingCheckoutDB(event.data.object);
-  //   res.status(200).send({ received: true });
-  // }
-  // if (event.type === 'checkout.session.completed') {
+
   console.log(`Processing event: ${event.id}`);
 
-  const b = await createBookingCheckoutDB(event.data.object);
+]]
+  res.status(200).send('Webhook received');
 
-  console.log(`event: ${event}`);
-  console.log(`booking: ${b}`);
-  res.status(200).json({ received: true });
-  // }
+  try {
+    const booking = createBookingCheckoutDB(event.data.object);
+    console.log(`Booking created: ${JSON.stringify(booking)}`);
+  } catch (error) {
+    console.error(`Error processing webhook: ${error.message}`);
+  }
+  //   // const signature = process.env.STRIPE_SIGNATURE_KEY;
+  //   console.log(`Stripe hook received request! ${req}`);
+  //   const signature = req.headers['stripe-signature'];
+  //   let event;
+  //   try {
+  //     event = stripe.webhooks.constructEvent(
+  //       req.body,
+  //       signature,
+  //       process.env.STRIPE_SIGNATURE_KEY,
+  //     );
+  //   } catch (error) {
+  //     return res.status(400).send(`Webhook error: ${error.message}`);
+  //   }
+  //   // if (event.type === 'checkout.session.completed') {
+  //   //   const booking = createBookingCheckoutDB(event.data.object);
+  //   //   res.status(200).send({ received: true });
+  //   // }
+  //   // if (event.type === 'checkout.session.completed') {
+  //   console.log(`Processing event: ${event.id}`);
+
+  //   const b = await createBookingCheckoutDB(event.data.object);
+
+  //   console.log(`event: ${event}`);
+  //   console.log(`booking: ${b}`);
+  //   res.status(200).json({ received: true });
+  //   // }
 };
 
 exports.createBooking = factory.createOne(Booking);
