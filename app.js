@@ -98,7 +98,7 @@ const limiter = rateLimit({
 
 app.post(
   '/webhook-checkout-session',
-  express.raw(),
+  express.raw({ type: 'application/json' }),
   bookingController.webhookStripeSession,
 );
 
