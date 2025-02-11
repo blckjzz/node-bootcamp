@@ -86,7 +86,7 @@ exports.webhookStripeSession = async (req, res, next) => {
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
 
-  console.log(`Processing event: ${event.id}`);
+  // console.log(`Processing event: ${event.id}`);
 
   // 🔥 Responde ao Stripe imediatamente para evitar timeout
   res.status(200).send('Webhook received');
@@ -96,11 +96,8 @@ exports.webhookStripeSession = async (req, res, next) => {
     console.log(`event data: ${event.data.object.client_reference_id}`);
     console.log(`event data: ${event.data.object.amount_total}`);
     console.log(`event data: ${event.data.object.customer_email}`);
-
-    const booking = await createBookingCheckoutDB(event.data.object);
-    const booking2 = createBookingCheckoutDB(event.data.object);
-    console.log(`Booking created: ${JSON.stringify(booking)}`);
-    console.log(`Booking created2: ${JSON.stringify(booking2)}`);
+    createBookingCheckoutDB(event.data.object);
+    // const booking2 = createBookingCheckoutDB(event.data.object);
   } catch (error) {
     console.error(`Error processing webhook: ${error.message}`);
   }
