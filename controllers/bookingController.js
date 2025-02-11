@@ -72,12 +72,12 @@ const createBookingCheckoutDB = catchAsync(async (session) => {
 exports.webhookStripeSession = async (req, res, next) => {
   console.log(`Stripe hook received request!`);
 
-  const signature = req.headers['stripe-signature'];
   let event;
+  const signature = req.headers['stripe-signature'];
 
   try {
     event = stripe.webhooks.constructEvent(
-      req.body,
+      req.body.toString(),
       signature,
       process.env.STRIPE_SIGNATURE_KEY,
     );
@@ -91,7 +91,6 @@ exports.webhookStripeSession = async (req, res, next) => {
   // 🔥 Responde ao Stripe imediatamente para evitar timeout
   res.status(200).send('Webhook received');
 
-  // 🚀 Processa em background
   try {
     const booking = await createBookingCheckoutDB(event.data.object);
     console.log(`Booking created: ${JSON.stringify(booking)}`);
