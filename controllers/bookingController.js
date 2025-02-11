@@ -68,15 +68,6 @@ const createBookingCheckoutDB = catchAsync(async (session) => {
 
   return await Booking.create({ tour, price, user });
 });
-exports.createBookingCheckout = catchAsync(async (req, res, next) => {
-  const { tour, price, user } = req.query;
-
-  if (!tour || !price || !user) return next();
-
-  await Booking.create({ tour, price, user });
-
-  res.redirect(req.originalUrl.split('?')[0]);
-});
 
 exports.webhookStripeSession = async (req, res, next) => {
   console.log(`Stripe hook received request!`);
@@ -97,40 +88,16 @@ exports.webhookStripeSession = async (req, res, next) => {
 
   console.log(`Processing event: ${event.id}`);
 
+  // 🔥 Responde ao Stripe imediatamente para evitar timeout
   res.status(200).send('Webhook received');
 
+  // 🚀 Processa em background
   try {
-    const booking = createBookingCheckoutDB(event.data.object);
+    const booking = await createBookingCheckoutDB(event.data.object);
     console.log(`Booking created: ${JSON.stringify(booking)}`);
   } catch (error) {
     console.error(`Error processing webhook: ${error.message}`);
   }
-  //   // const signature = process.env.STRIPE_SIGNATURE_KEY;
-  //   console.log(`Stripe hook received request! ${req}`);
-  //   const signature = req.headers['stripe-signature'];
-  //   let event;
-  //   try {
-  //     event = stripe.webhooks.constructEvent(
-  //       req.body,
-  //       signature,
-  //       process.env.STRIPE_SIGNATURE_KEY,
-  //     );
-  //   } catch (error) {
-  //     return res.status(400).send(`Webhook error: ${error.message}`);
-  //   }
-  //   // if (event.type === 'checkout.session.completed') {
-  //   //   const booking = createBookingCheckoutDB(event.data.object);
-  //   //   res.status(200).send({ received: true });
-  //   // }
-  //   // if (event.type === 'checkout.session.completed') {
-  //   console.log(`Processing event: ${event.id}`);
-
-  //   const b = await createBookingCheckoutDB(event.data.object);
-
-  //   console.log(`event: ${event}`);
-  //   console.log(`booking: ${b}`);
-  //   res.status(200).json({ received: true });
-  //   // }
 };
 
 exports.createBooking = factory.createOne(Booking);
