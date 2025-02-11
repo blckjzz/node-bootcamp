@@ -78,7 +78,7 @@ exports.createBookingCheckout = catchAsync(async (req, res, next) => {
   res.redirect(req.originalUrl.split('?')[0]);
 });
 
-exports.webhookStripeSession = (req, res, next) => {
+exports.webhookStripeSession = async (req, res, next) => {
   // const signature = process.env.STRIPE_SIGNATURE_KEY;
   console.log(`Stripe hook received request! ${req}`);
   const signature = req.headers['stripe-signature'];
@@ -92,15 +92,15 @@ exports.webhookStripeSession = (req, res, next) => {
   } catch (error) {
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
-  if (event.type === 'checkout.session.completed') {
-    const booking = createBookingCheckoutDB(event.data.object);
-    res.status(200).send({ received: true });
-  }
+  // if (event.type === 'checkout.session.completed') {
+  //   const booking = createBookingCheckoutDB(event.data.object);
+  //   res.status(200).send({ received: true });
+  // }
   if (event.type === 'checkout.session.completed') {
     console.log(`Processing event: ${event.id}`);
-    
-   const b = await createBookingCheckoutDB(event.data.object); 
-    
+
+    const b = await createBookingCheckoutDB(event.data.object);
+
     console.log(`event: ${event}`);
     console.log(`booking: ${b}`);
     res.status(200).json({ received: true });
