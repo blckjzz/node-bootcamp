@@ -59,14 +59,14 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
 const createBookingCheckoutDB = catchAsync(async (session) => {
   // const { tour, price, user } = req.query;
   const tour = session.client_reference_id;
-  const price = session.line_items[0].price_data.unit_amount / 100;
+  const price = session.amount_total;
   // const price = session.line_items.data[0].price.unit_amount / 100;
 
   const user = (await User.findOne({ email: session.customer_email })).id;
 
   // if (!tour || !price || !user) return next();
 
-  return await Booking.create({ tour, price, user });
+  return await Booking.create({ tour, user, price });
 });
 
 exports.webhookStripeSession = async (req, res, next) => {
@@ -92,7 +92,11 @@ exports.webhookStripeSession = async (req, res, next) => {
   res.status(200).send('Webhook received');
 
   try {
-    console.log(`event data: ${event.data.object}`);
+    console.log(`------data from event----`);
+    console.log(`event data: ${event.data.object.client_reference_id}`);
+    console.log(`event data: ${event.data.object.amount_total}`);
+    console.log(`event data: ${event.data.object.customer_email}`);
+
     const booking = await createBookingCheckoutDB(event.data.object);
     const booking2 = createBookingCheckoutDB(event.data.object);
     console.log(`Booking created: ${JSON.stringify(booking)}`);
