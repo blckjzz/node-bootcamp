@@ -96,15 +96,15 @@ exports.webhookStripeSession = async (req, res, next) => {
   //   const booking = createBookingCheckoutDB(event.data.object);
   //   res.status(200).send({ received: true });
   // }
-  if (event.type === 'checkout.session.completed') {
-    console.log(`Processing event: ${event.id}`);
+  // if (event.type === 'checkout.session.completed') {
+  console.log(`Processing event: ${event.id}`);
 
-    const b = await createBookingCheckoutDB(event.data.object);
+  const b = await createBookingCheckoutDB(event.data.object);
 
-    console.log(`event: ${event}`);
-    console.log(`booking: ${b}`);
-    res.status(200).json({ received: true });
-  }
+  console.log(`event: ${event}`);
+  console.log(`booking: ${b}`);
+  res.status(200).json({ received: true });
+  // }
 };
 
 exports.createBooking = factory.createOne(Booking);
