@@ -97,7 +97,6 @@ exports.webhookStripeSession = async (req, res, next) => {
 
   console.log(`Processing event: ${event.id}`);
 
-]]
   res.status(200).send('Webhook received');
 
   try {
