@@ -56,6 +56,16 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', session });
 });
 
+const createBookingCheckoutDB = catchAsync(async (session) => {
+  // const { tour, price, user } = req.query;
+  const tour = session.client_reference_id;
+  const price = session.line_items[0].price_data.unit_amount / 100;
+  const user = (await User.findOne({ email: session.customer_email })).id;
+
+  // if (!tour || !price || !user) return next();
+
+  return Booking.create({ tour, price, user });
+});
 exports.createBookingCheckout = catchAsync(async (req, res, next) => {
   const { tour, price, user } = req.query;
 
@@ -68,6 +78,7 @@ exports.createBookingCheckout = catchAsync(async (req, res, next) => {
 
 exports.webhookStripeSession = (req, res, next) => {
   // const signature = process.env.STRIPE_SIGNATURE_KEY;
+  console.log(`Stripe hook received request! ${req}`);
   const signature = req.headers['stripe-signature'];
   let event;
   try {
@@ -80,21 +91,12 @@ exports.webhookStripeSession = (req, res, next) => {
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
   if (event.type === 'checkout.session.completed') {
-    createBookingCheckoutDB(event.data.object);
+    console.log(`event: ${event}`);
+    const booking = createBookingCheckoutDB(event.data.object);
+    console.log(`booking: ${booking}`);
     res.status(200).send({ received: true });
   }
 };
-
-const createBookingCheckoutDB = catchAsync(async (session) => {
-  // const { tour, price, user } = req.query;
-  const tour = session.client_reference_id;
-  const price = session.line_items[0].price_data.unit_amount / 100;
-  const user = (await User.findOne({ email: session.customer_email })).id;
-
-  // if (!tour || !price || !user) return next();
-
-  await Booking.create({ tour, price, user });
-});
 
 exports.createBooking = factory.createOne(Booking);
 exports.getAllBookings = factory.getAll(Booking);
