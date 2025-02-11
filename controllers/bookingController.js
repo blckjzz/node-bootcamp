@@ -60,11 +60,13 @@ const createBookingCheckoutDB = catchAsync(async (session) => {
   // const { tour, price, user } = req.query;
   const tour = session.client_reference_id;
   const price = session.line_items[0].price_data.unit_amount / 100;
+  // const price = session.line_items.data[0].price.unit_amount / 100;
+
   const user = (await User.findOne({ email: session.customer_email })).id;
 
   // if (!tour || !price || !user) return next();
 
-  return Booking.create({ tour, price, user });
+  return await Booking.create({ tour, price, user });
 });
 exports.createBookingCheckout = catchAsync(async (req, res, next) => {
   const { tour, price, user } = req.query;
@@ -82,19 +84,26 @@ exports.webhookStripeSession = (req, res, next) => {
   const signature = req.headers['stripe-signature'];
   let event;
   try {
-    event = stripe.webhooks.contructEvent(
+    event = stripe.webhooks.constructEvent(
       req.body,
       signature,
-      process.env.STRIPE_SECRET_KEY,
+      process.env.STRIPE_SIGNATURE_KEY,
     );
   } catch (error) {
     return res.status(400).send(`Webhook error: ${error.message}`);
   }
   if (event.type === 'checkout.session.completed') {
-    console.log(`event: ${event}`);
     const booking = createBookingCheckoutDB(event.data.object);
-    console.log(`booking: ${booking}`);
     res.status(200).send({ received: true });
+  }
+  if (event.type === 'checkout.session.completed') {
+    console.log(`Processing event: ${event.id}`);
+    
+   const b = await createBookingCheckoutDB(event.data.object); 
+    
+    console.log(`event: ${event}`);
+    console.log(`booking: ${b}`);
+    res.status(200).json({ received: true });
   }
 };
 
